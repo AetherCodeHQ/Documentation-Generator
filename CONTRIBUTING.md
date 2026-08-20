@@ -6,7 +6,7 @@ Thank you for your interest in contributing! 🎉
 
 ### 1. Fork the Repository
 ```bash
-git clone https://github.com/Qyroxen/Documentation-Generator.git
+git clone https://github.com/AetherCodeHQ/Documentation-Generator.git
 cd Documentation-Generator
 ```
 
