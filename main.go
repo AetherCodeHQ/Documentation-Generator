@@ -1,40 +1,48 @@
-
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
+var reFunc = regexp.MustCompile("^func[[:space:]]+([A-Za-z0-9_]+)")
+var reType = regexp.MustCompile("^type[[:space:]]+([A-Za-z0-9_]+)")
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("usage: Documentation-Generator <bytes|lines|reverse|upper|lower>")
-		os.Exit(1)
+	dir := "."
+	if len(os.Args) > 1 {
+		dir = os.Args[1]
 	}
-	mode := os.Args[1]
-	in := ""
-	if len(os.Args) > 2 {
-		in = os.Args[2]
-	}
-	lines := strings.Split(in, "\n")
-	switch mode {
-	case "lines":
-		fmt.Println(len(lines))
-	case "bytes":
-		fmt.Println(len(in))
-	case "upper":
-		fmt.Println(strings.ToUpper(in))
-	case "lower":
-		fmt.Println(strings.ToLower(in))
-	case "reverse":
-		runes := []rune(in)
-		for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-			runes[i], runes[j] = runes[j], runes[i]
+	fmt.Println("# API Documentation\n")
+	filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
 		}
-		fmt.Println(string(runes))
-	default:
-		fmt.Fprintln(os.Stderr, "unknown mode:", mode)
-		os.Exit(1)
-	}
+		if filepath.Ext(p) != ".go" || strings.HasSuffix(p, "_test.go") {
+			return nil
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+		fmt.Printf("## %s\n\n", filepath.ToSlash(p))
+		sc := bufio.NewScanner(f)
+		ln := 0
+		for sc.Scan() {
+			ln++
+			line := strings.TrimSpace(sc.Text())
+			if m := reFunc.FindStringSubmatch(line); m != nil {
+				fmt.Printf("- **%s()** (func, line %d)\n", m[1], ln)
+			} else if m := reType.FindStringSubmatch(line); m != nil {
+				fmt.Printf("- **%s** (type, line %d)\n", m[1], ln)
+			}
+		}
+		fmt.Println()
+		return nil
+	})
 }
